@@ -126,6 +126,11 @@ local function run(_program)
 	end
 end
 
+for key, _ in pairs(alu) do
+	print(key)
+end
+
+--[[
 for _, test in pairs(tests) do
 	print()
 	run(clear_registers)
@@ -133,3 +138,4 @@ for _, test in pairs(tests) do
 	run(test.instructions)
 	print(print_registers())
 end
+--]]

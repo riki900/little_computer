@@ -1,0 +1,5 @@
+GETC
+IN
+OUT
+PUTS
+HALT

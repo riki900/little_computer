@@ -1,1 +1,4 @@
+*.obj
+*.lst
+x.lua
 sandbox

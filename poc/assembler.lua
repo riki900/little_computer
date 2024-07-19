@@ -2,17 +2,61 @@
    assembler for my little computer
 --]]
 
-local instruct_set = {
-	NOT = true,
-	MUL = true,
+local OP_CODES = {
+
+	-- math operations
 	ADD = true,
-	SUB = true,
-	LOAD = true,
+	ADDI = true,
+	ADDR = true,
 	DIV = true,
-	BRP = true,
+	DIVI = true,
+	DIVR = true,
+	MUL = true,
+	MULI = true,
+	MULR = true,
+	SUB = true,
+	SUBI = true,
+	SUBR = true,
+
+	-- bit operations
+	AND = true,
+	ANDI = true,
+	ANDR = true,
+	NOTR = true,
+	OR = true,
+	ORI = true,
+	ORR = true,
+
+	-- branch/jump operations
+	BR = true,
+	BRnp = true,
+	BRnzp = true,
+	BRnz = true,
+	BRp = true,
+	BRzp = true,
+	BRz = true,
+	JMP = true,
+	JSRR = true,
+	JSR = true,
+	RET = true,
+
+	-- trap instructions
+	GETC = true,
+	OUT = true,
+	PUTS = true,
+	IN = true,
+
+	-- misc instructions
+	HALT = true,
+
+	-- load resisters
+	LEA = true,
+	LD = true,
 	LDI = true,
-	
+	LDR = true,
 }
+
+local ADDR_PREFIX = "addr="
 
 local pt = require("print_table")
 
@@ -59,9 +103,18 @@ local function lex(src_file, lst_file)
 	local src_line = src_file:read("*l")
 	while src_line do
 		lst_file:write(src_line .. CR)
-		if not string.match(src_line, "^%s*#") then
-			table.insert(tokens, tokenize(src_line))
+		-- ignore blank and comment lines
+		if string.match(src_line, "^%s*$") then
+			goto continue
 		end
+		if string.match(src_line, "^%s*#") then
+			goto continue
+		end
+		-- end ignore
+
+		table.insert(tokens, tokenize(src_line))
+
+		::continue::
 		src_line = src_file:read("*l")
 	end
 
@@ -97,9 +150,19 @@ end
 local function pass2(symbols, ir_code, obj_file)
 	for _, statement in ipairs(ir_code) do
 		local op_code = statement.op_code
-		local op1 = symbols[statement.op1] or statement.op1
-		local op2 = symbols[statement.op2] or statement.op2
-		local op3 = symbols[statement.op3] or statement.op3
+		local op1 = statement.op1
+		local op2 = statement.op2
+		local op3 = statement.op3
+		-- replace symbols with address
+		if symbols[op1] ~= nil then
+			op1 = ADDR_PREFIX .. symbols[op1]
+		end
+		if symbols[op2] ~= nil then
+			op2 = ADDR_PREFIX .. symbols[op2]
+		end
+		if symbols[op3] ~= nil then
+			op3 = ADDR_PREFIX .. symbols[op3]
+		end
 		local statement_details = { statement.address, op_code, op1, op2, op3 }
 		local obj_statement = ""
 		for _, detail in ipairs(statement_details) do
@@ -114,7 +177,7 @@ end
 local src_file, lst_file, obj_file = initialize()
 local tokens = lex(src_file, lst_file)
 local symbols, ir_code = pass1(tokens)
--- --[[
+--[[
 print("IR_CODE ====================")
 pt(ir_code)
 print("SYMBOLS ====================")

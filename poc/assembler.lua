@@ -56,8 +56,6 @@ local OP_CODES = {
 	LDR = true,
 }
 
-local ADDR_PREFIX = "addr="
-
 local pt = require("print_table")
 
 local CR = "\n"
@@ -155,13 +153,13 @@ local function pass2(symbols, ir_code, obj_file)
 		local op3 = statement.op3
 		-- replace symbols with address
 		if symbols[op1] ~= nil then
-			op1 = ADDR_PREFIX .. symbols[op1]
+			op1 = symbols[op1]
 		end
 		if symbols[op2] ~= nil then
-			op2 = ADDR_PREFIX .. symbols[op2]
+			op2 = symbols[op2]
 		end
 		if symbols[op3] ~= nil then
-			op3 = ADDR_PREFIX .. symbols[op3]
+			op3 = symbols[op3]
 		end
 		local statement_details = { statement.address, op_code, op1, op2, op3 }
 		local obj_statement = ""

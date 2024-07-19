@@ -1,0 +1,3 @@
+LDI R1,0x00ff
+LDR R0,R1
+HALT

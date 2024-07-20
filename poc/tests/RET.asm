@@ -1,0 +1,35 @@
+# test of RET
+
+    PUTS TEST_MSG:
+    PUTS START_MSG:
+    PUTS SPACES:
+
+    LEA R7, RETURN_TO:
+    RET
+    PUTS NO_RETURN:
+    PUTS FAILED:
+    BR END_TESTS:
+
+RETURN_TO: NOP
+    PUTS DID_RETURN:
+    PUTS PASSED:
+    
+
+END_TESTS: NOP
+    PUTS SPACES:
+    PUTS END_MSG:
+    HALT
+
+# print messages 
+
+START_MSG: DC "START"
+END_MSG: DC "END"
+
+FAILED: DC "_____FAILED"
+PASSED: DC "_____PASSED"
+SPACES: DC "--------------"
+
+NO_RETURN: DC "NO_RETURN"
+DID_RETURN: DC "DID_RETURN"
+
+TEST_MSG: DC "TEST_RET"

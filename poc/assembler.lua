@@ -36,18 +36,21 @@ local OP_CODES = {
 	BRzp = true,
 	BRz = true,
 	JMP = true,
+	RET = true,
 	JSRR = true,
 	JSR = true,
-	RET = true,
 
 	-- trap instructions
+	--[[ TODO: implement
 	GETC = true,
 	OUT = true,
-	PUTS = true,
 	IN = true,
+	--]]
+	PUTS = true,
 
 	-- misc instructions
 	HALT = true,
+	NOP = true,
 
 	-- load resisters
 	LEA = true,

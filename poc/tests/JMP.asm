@@ -1,0 +1,35 @@
+# test of JMP
+
+    PUTS TEST_MSG:
+    PUTS START_MSG:
+    PUTS SPACES:
+
+    LEA R1, JMP_TO:
+    JMP R1
+    PUTS NO_JMP:
+    PUTS FAILED:
+    BR END_TESTS:
+
+JMP_TO: NOP
+    PUTS DID_JMP:
+    PUTS PASSED:
+    
+
+END_TESTS: NOP
+    PUTS SPACES:
+    PUTS END_MSG:
+    HALT
+
+# print messages 
+
+START_MSG: DC "START"
+END_MSG: DC "END"
+
+FAILED: DC "_____FAILED"
+PASSED: DC "_____PASSED"
+SPACES: DC "--------------"
+
+NO_JMP: DC "NO_JMP"
+DID_JMP: DC "DID_JMP"
+
+TEST_MSG: DC "TEST_JMP"

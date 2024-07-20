@@ -6,10 +6,12 @@ local pt = require("print_table")
 local REMAINDER_REGISTER = "R0"
 local RETURN_REGISTER = "R7"
 
-local cc = {
-	N = false,
-	Z = false,
-	P = false,
+local CC = 0
+
+local CC_FLAGS = {
+	negative = 1 << 2,
+	zero = 1 << 1,
+	positive = 1,
 }
 
 local registers = {
@@ -26,7 +28,15 @@ local registers = {
 local ram = {}
 
 local function set_cc(value)
-	local _ = value
+	CC = 0
+	value = tonumber(value)
+	if value < 0 then
+		CC = CC + CC_FLAGS.negative
+	elseif value == 0 then
+		CC = CC + CC_FLAGS.zero
+	else
+		CC = CC + CC_FLAGS.positive
+	end
 end
 
 local function fetch_ram(address)
@@ -83,51 +93,69 @@ end
 -- BRxxx LABEL
 -- unconditional branch
 alu.BR = function(instruction)
-	local _, _, dest, src1, src2 = table.unpack(instruction)
-	_ = dest + src1 + src2 -- remove when implemented
-	return true
+	local _, _, address = table.unpack(instruction)
+	return tonumber(address)
 end
 
 -- conditional branch when NZP flags are set
 alu.BRnzp = function(instruction)
-	local _, _, dest, src1, src2 = table.unpack(instruction)
-	_ = dest + src1 + src2 -- remove when implemented
-	return true
+	local _, _, address = table.unpack(instruction)
+	return tonumber(address)
 end
 
 -- conditional branch when NZ flags are set
 alu.BRnz = function(instruction)
-	local _, _, dest, src1, src2 = table.unpack(instruction)
-	_ = dest + src1 + src2 -- remove when implemented
-	return true
+	local _, _, address = table.unpack(instruction)
+	if ((CC & CC_FLAGS.negative) == CC_FLAGS.negative
+		or (CC & CC_FLAGS.zero) == CC_FLAGS.zero)
+		and (CC & CC_FLAGS.positive) ~= CC_FLAGS.positive
+	then
+		return tonumber(address)
+	end
 end
 
 -- conditional branch when NP flags are set
 alu.BRnp = function(instruction)
-	local _, _, dest, src1, src2 = table.unpack(instruction)
-	_ = dest + src1 + src2 -- remove when implemented
-	return true
+	local _, _, address = table.unpack(instruction)
+	if ((CC & CC_FLAGS.negative) == CC_FLAGS.negative
+		or (CC & CC_FLAGS.positive) == CC_FLAGS.positive)
+		and (CC & CC_FLAGS.zero) ~= CC_FLAGS.zero
+	then
+		return tonumber(address)
+	end
 end
 
 -- conditional branch when Z flags are set
 alu.BRz = function(instruction)
-	local _, _, dest, src1, src2 = table.unpack(instruction)
-	_ = dest + src1 + src2 -- remove when implemented
-	return true
+	local _, _, address = table.unpack(instruction)
+	if ( (CC & CC_FLAGS.negative) ~= CC_FLAGS.negative
+    or (CC & CC_FLAGS.positive) ~= CC_FLAGS.positive )
+    and (CC & CC_FLAGS.zero) == CC_FLAGS.zero
+    then
+	   return tonumber(address)
+	end
 end
 
 -- conditional branch when ZP flags are set
 alu.BRzp = function(instruction)
-	local _, _, dest, src1, src2 = table.unpack(instruction)
-	_ = dest + src1 + src2 -- remove when implemented
-	return true
+	local _, _, address = table.unpack(instruction)
+    if ( (CC & CC_FLAGS.zero) == CC_FLAGS.zero
+    or (CC & CC_FLAGS.positive) == CC_FLAGS.positive )
+    and (CC & CC_FLAGS.negative) ~= CC_FLAGS.negative
+	then
+	   return tonumber(address)
+	end
 end
 
 -- conditional branch when P flags are set
 alu.BRp = function(instruction)
-	local _, _, dest, src1, src2 = table.unpack(instruction)
-	_ = dest + src1 + src2 -- remove when implemented
-	return true
+	local _, _, address = table.unpack(instruction)
+    if ( (CC & CC_FLAGS.zero) ~= CC_FLAGS.zero
+    or (CC & CC_FLAGS.negative) ~= CC_FLAGS.negative )
+    and (CC & CC_FLAGS.positive) == CC_FLAGS.positive
+	then
+	   return tonumber(address)
+	end
 end
 
 -- pseudo code DC same as NOtokensP
@@ -183,23 +211,22 @@ end
 
 -- JMP SR (jump to location in loaded into the source register)
 alu.JMP = function(instruction)
-	local _, _, dest, src1, src2 = table.unpack(instruction)
-	_ = dest + src1 + src2 -- remove when implemented
-	return true
+	local _, _, jmp_to_register = table.unpack(instruction)
+    return tonumber(registers[jmp_to_register])
 end
 
 -- JSR LABEL (jump to LABEL loc and set R7 to next PC)
 alu.JSR = function(instruction)
-	local _, _, dest, src1, src2 = table.unpack(instruction)
-	_ = dest + src1 + src2 -- remove when implemented
-	return true
+	local PC, _, address = table.unpack(instruction)
+	registers[RETURN_REGISTER] = PC + 1
+	return tonumber(address)
 end
 
 -- JSRR SR (jump to loc in SR and set R7 to next PC)
 alu.JSRR = function(instruction)
-	local _, _, dest, src1, src2 = table.unpack(instruction)
-	_ = dest + src1 + src2 -- remove when implemented
-	return true
+	local PC, _, jmp_to_register = table.unpack(instruction)
+	registers[RETURN_REGISTER] = PC + 1
+    return tonumber(registers[jmp_to_register])
 end
 
 -- DR <- LABEL ( LD value at address of LABEL)
@@ -250,6 +277,9 @@ alu.MULR = function(instruction)
 	set_cc(registers[dest])
 end
 
+-- no operation (useful for branch labels)
+alu.NOP = function() end
+
 -- DR -SR
 alu.NOTR = function(instruction)
 	local _, _, dest, src = table.unpack(instruction)
@@ -293,9 +323,8 @@ end
 
 -- RET (return from subroutine - jump to location in R7.)
 alu.RET = function(instruction)
-	local _, _, dest, src1, src2 = table.unpack(instruction)
-	_ = dest + src1 + src2 -- remove when implemented
-	return true
+	local _ = table.unpack(instruction)
+    return tonumber(registers[RETURN_REGISTER])
 end
 
 -- DR <- SRC1 - LABEL

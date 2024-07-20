@@ -45,7 +45,6 @@ local function run()
 	print()
 	while true do
 		local instruction = ram[PC]
-		--pt(instruction)
 		local op_code = instruction[2]
 		if alu[op_code] == nil then
 			error("PANIC: INVALID OP_CODE " .. op_code)
@@ -53,8 +52,12 @@ local function run()
 		if op_code == "HALT" then
 			break
 		end
-		alu[op_code](instruction)
-		PC = PC + 1
+		local branch_address = alu[op_code](instruction)
+		if branch_address == nil then
+			PC = PC + 1
+		else
+			PC = branch_address
+		end
 	end
 	print()
 	print("RUN: HALT")

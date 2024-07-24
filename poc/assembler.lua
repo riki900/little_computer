@@ -178,10 +178,4 @@ end
 local src_file, lst_file, obj_file = initialize()
 local tokens = lex(src_file, lst_file)
 local symbols, ir_code = pass1(tokens)
---[[
-print("IR_CODE ====================")
-pt(ir_code)
-print("SYMBOLS ====================")
-pt(symbols)
---]]
 pass2(symbols, ir_code, obj_file)

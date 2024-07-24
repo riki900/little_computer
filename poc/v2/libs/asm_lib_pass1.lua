@@ -1,9 +1,11 @@
+local pt = require("print_table")
+
 local lib_pass1 = {}
 
 local LABEL_PATTERN = "(%g+:)"
 local LABELED_LINE_PATTERN = string.format("^%s", LABEL_PATTERN)
 local HEX_LITERAL_PATTERN = "0x%x%x%x%x"
-local STR_LITERAL_PATTERN = '".*"'
+local STR_LITERAL_PATTERN = '^".*"$'
 local OP_CODE_PATTERN = "^%s*(%g+)%s*"
 local REGISTER_PATTERN = "R%d"
 local LEADING_SPACES_PATTERN = "^%s*"
@@ -14,50 +16,48 @@ local SINGLE_SPACE = " "
 local NO_VALUE = ""
 
 local VALID_OP_CODES = {
-    -- opcode = operand definition
-    ADDI = "RRI",
-    ADDR = "RRR",
-    ANDI = "RRI",
-    ADD = "RRL",
-    AND = "RRL",
-    ANDR = "RRR",
-    BR = "L",
-    BRnp = "L",
-    BRnz = "L",
-    BRnzp = "L",
-    BRp = "L",
-    BRz = "L",
-    BRzp = "L",
-    DC = "LIT",
-    DIVI = "RRI",
-    DIV = "RRL",
-    DIVR = "RRR",
-    GETC = "NO_ARGS",
-    HALT = "NO_ARGS",
-    IN = "NO_ARGS",
-    JMP = "R",
-    JSR = "L",
-    JSRR = "R",
-    LDI = "RI",
-    LD = "RL",
-    LDR = "RR",
-    LEA = "RL",
-    MULI = "RRI",
-    MUL = "RRL",
-    MULR = "RRR",
-    NOP = "NO_ARGS",
-    NOTR = "RRR",
-    ORI = "RRI",
-    OR = "RRL",
-    ORR = "RRR",
-    OUT = "NO_ARGS",
-    PUTS = "L",
-    RET = "NO_ARGS",
-    SUBI = "RRI",
-    SUB = "RRL",
-    SUBR = "RRR",
+	ADDI = { type = "RRI", op_code = "0091" },
+	ADDR = { type = "RRR", op_code = "0092" },
+	ADD = { type = "RRL", op_code = "0090" },
+	ANDI = { type = "RRI", op_code = "0011" },
+	ANDR = { type = "RRR", op_code = "0012" },
+	AND = { type = "RRL", op_code = "0010" },
+	BRnp = { type = "L", op_code = "0031" },
+	BRnzp = { type = "L", op_code = "0033" },
+	BRnz = { type = "L", op_code = "0032" },
+	BRp = { type = "L", op_code = "0034" },
+	BR = { type = "L", op_code = "0030" },
+	BRzp = { type = "L", op_code = "0036" },
+	BRz = { type = "L", op_code = "0035" },
+	DC = { type = "LIT", op_code = "0000" },
+	DIVI = { type = "RRI", op_code = "0094" },
+	DIVR = { type = "RRR", op_code = "0095" },
+	DIV = { type = "RRL", op_code = "0093" },
+	GETC = { type = "NO_ARGS", op_code = "0050" },
+	HALT = { type = "NO_ARGS", op_code = "00B0" },
+	IN = { type = "NO_ARGS", op_code = "0051" },
+	JMP = { type = "R", op_code = "0037" },
+	JSRR = { type = "R", op_code = "0039" },
+	JSR = { type = "L", op_code = "0038" },
+	LDI = { type = "RI", op_code = "0071" },
+	LDR = { type = "RR", op_code = "0072" },
+	LD = { type = "RL", op_code = "0070" },
+	LEA = { type = "RL", op_code = "0073" },
+	MULI = { type = "RRI", op_code = "0097" },
+	MULR = { type = "RRR", op_code = "0098" },
+	MUL = { type = "RRL", op_code = "0096" },
+	NOP = { type = "NO_ARGS", op_code = "0000" },
+	NOTR = { type = "RRR", op_code = "0013" },
+	ORI = { type = "RRI", op_code = "0015" },
+	ORR = { type = "RRR", op_code = "0016" },
+	OR = { type = "RRL", op_code = "0014" },
+	OUT = { type = "NO_ARGS", op_code = "0052" },
+	PUTS = { type = "L", op_code = "0053" },
+	RET = { type = "NO_ARGS", op_code = "003A" },
+	SUBI = { type = "RRI", op_code = "009A" },
+	SUBR = { type = "RRR", op_code = "009B" },
+	SUB = { type = "RRL", op_code = "0099" },
 }
-
 local OPERAND_TYPES = {
     REGISTER = "REGISTER",
     HEX_LITERAL = "HEX_LITERAL",
@@ -113,6 +113,7 @@ local function validate_DC(statement, label, operands)
 end
 
 local function tokenize_operands(operands)
+
     -- trim the opeands string & replace , with space
     operands = string.gsub(operands, OPERAND_DELIMITER_PATTERN, SINGLE_SPACE)
     operands = string.gsub(operands, LEADING_SPACES_PATTERN, NO_VALUE)
@@ -120,6 +121,13 @@ local function tokenize_operands(operands)
 
     local tokens = {}
     local operand_type
+    -- strings operans are special case - only one allowed
+    if string.match(operands, STR_LITERAL_PATTERN) ~= nil then
+        operand_type = OPERAND_TYPES.STR_LITERAL
+        local tokenized = { type = operand_type, value = operands }
+        table.insert(tokens,tokenized)
+        return tokens
+    end
     for operand in string.gmatch(operands, CAPTURE_OPERAND_PATTERN) do
         if string.match(operand, REGISTER_PATTERN) ~= nil then
             operand_type = OPERAND_TYPES.REGISTER
@@ -159,16 +167,27 @@ local function tokenize_statement(source_line)
     return label, op_code, operands
 end
 
+local function src_operand_to_ir_code(operand)
+     if operand == nil then
+        return operand
+     end
+     if operand.type == OPERAND_TYPES.REGISTER then
+        operand.value = string.gsub(operand.value,"R","")
+        return operand
+    end
+    return operand
+end
+
 function lib_pass1.run(_statements)
     local my_symbols = {}
     local my_statements = {}
     local address = 1
-    local op1, op2, op3
+    local op1, op2, op3, ir_op_code
     for _, statement in ipairs(_statements) do
         local label, op_code, operands = tokenize_statement(statement.source)
         local checks
         local ir_code
-        local type_check = VALID_OP_CODES[op_code]
+        local type_check = VALID_OP_CODES[op_code].type
         if type_check == nil then
             local error = string.format("ERROR: INVALID OP_CODE: '%s'", op_code)
             table.insert(statement.errors, error)
@@ -202,7 +221,11 @@ function lib_pass1.run(_statements)
             my_symbols[label] = address
         end
         op1, op2, op3 = table.unpack(operands)
-        ir_code = { address = address, label = label, op_code = op_code, op1 = op1, op2 = op2, op3 = op3 }
+        op1 = src_operand_to_ir_code(op1)
+        op2 = src_operand_to_ir_code(op2)
+        op3 = src_operand_to_ir_code(op3)
+        ir_op_code = VALID_OP_CODES[op_code].op_code
+        ir_code = { address = address, label = label, op_code = ir_op_code, op1 = op1, op2 = op2, op3 = op3 }
         statement.ir_code = ir_code
         address = address + 1
 

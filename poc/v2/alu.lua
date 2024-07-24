@@ -6,14 +6,14 @@ local REMAINDER_REGISTER = "R0"
 local RETURN_REGISTER = "R7"
 
 local registers = {
-	R0 = 0x0000,
-	R1 = 0x0000,
-	R2 = 0x0000,
-	R3 = 0x0000,
-	R4 = 0x0000,
-	R5 = 0x0000,
-	R6 = 0x0000,
-	R7 = 0x0000,
+	[0] = 0x0000,
+	[1] = 0x0000,
+	[2] = 0x0000,
+	[3] = 0x0000,
+	[4] = 0x0000,
+	[5] = 0x0000,
+	[6] = 0x0000,
+	[7] = 0x0000,
 }
 
 local CC = 0
@@ -342,10 +342,9 @@ end
 function alu.state()
 	-- display only the right most 4 hex digits
 	local print_line = ""
-	for r = 0, 7 do
-		local register = string.format("R%d", r)
+	for register = 0, 7 do
 		local value = display_as_16_bit(registers[register])
-		print_line = print_line .. string.format("%3s: %s", register, value)
+		print_line = print_line .. string.format("%d: %s ", register, value)
 	end
 	return print_line
 end
@@ -354,4 +353,9 @@ function alu.initialize(_ram)
 	ram = _ram
 end
 
+--[[
+TODO: use to convert strings in obj file to hex numbers
+used by the alu to lookup operations
+local to_hex = tonumber("0x"..number)
+--]]
 return alu

@@ -172,7 +172,15 @@ local function src_operand_to_ir_code(operand)
         return operand
      end
      if operand.type == OPERAND_TYPES.REGISTER then
-        operand.value = string.gsub(operand.value,"R","")
+        operand.value = "000" .. string.gsub(operand.value,"R","")
+        return operand
+    end
+    if operand.type == OPERAND_TYPES.HEX_LITERAL then
+        operand.value = string.gsub(operand.value,"0x","")
+        return operand
+    end
+    if operand.type == OPERAND_TYPES.STR_LITERAL then
+        operand.value = string.gsub(operand.value,'"',"")
         return operand
     end
     return operand
@@ -218,7 +226,7 @@ function lib_pass1.run(_statements)
         end
         ::gen_ir_code::
         if label ~= NO_VALUE then
-            my_symbols[label] = address
+            my_symbols[label] = string.format("%04X",address)
         end
         op1, op2, op3 = table.unpack(operands)
         op1 = src_operand_to_ir_code(op1)

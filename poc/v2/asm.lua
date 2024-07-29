@@ -33,3 +33,4 @@ end
 
 -- go assemble the source
 run(arg[1])
+pt(symbols)
